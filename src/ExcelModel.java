@@ -3,6 +3,7 @@ import com.bergen.exel_orm.annotations.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @ExelORMFile
 public class ExcelModel {
@@ -11,8 +12,16 @@ public class ExcelModel {
 
     public void prepareRaw() {
         if(!sheets.isEmpty()) {
-            for(var sh : sheets.values()) {
-                sheet = sh;
+            for(var shName : sheets.keySet()) {
+                if(Objects.equals(shName, "average")) {
+                    continue;
+                }
+                sheet = sheets.get(shName);
+                var num = 1;
+                for(var line : sheet.lines) {
+                    line.lineNum = num++;
+                    line.parseRaw();
+                }
                 return;
             }
         }
@@ -24,6 +33,7 @@ public class ExcelModel {
     }
 
     public static class DataLine {
+        public int lineNum;
         @ExelORMCell(pos = "A1") public String number;
         @ExelORMCell(pos = "B1") public String date;
         @ExelORMCell(pos = "C1") public String time;

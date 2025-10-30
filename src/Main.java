@@ -4,8 +4,8 @@ import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-//        parse("Улахан Ан 2 скв 5 поле.xlsx", "Улахан Ан 2 скв 5 поле average.xlsx");
-//        parse("Улахан Ан 2 скв 6 лес.xlsx", "Улахан Ан 2 скв 6 лес average.xlsx");
+        parse("Улахан Ан 2 скв 5 поле.xlsx", "Улахан Ан 2 скв 5 поле average.xlsx");
+        parse("Улахан Ан 2 скв 6 лес.xlsx", "Улахан Ан 2 скв 6 лес average.xlsx");
         parseXls("Скв 5 2024.xlsx", "Скв 5 2024 average.xlsx");
         parseXls("Скв 6 2024.xlsx", "Скв 6 2024 average.xlsx");
     }

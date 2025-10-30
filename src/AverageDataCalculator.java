@@ -2,10 +2,7 @@ import com.bergen.exel_orm.exel.ExcelSheetWriter;
 import com.bergen.exel_orm.exel.ExcelWriter;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class AverageDataCalculator {
     private static final String AVG_DATA_SHEET = "Среднесуточные данные";
@@ -17,7 +14,7 @@ public class AverageDataCalculator {
         var linesByDate = groupByDates(model);
         System.out.println("Found " + linesByDate.size() + " days data");
         var averageLines = calculateAverage(linesByDate);
-        averageLines.sort((a, b) -> a.date.compareTo(b.date));
+        averageLines.sort(Comparator.comparingInt(a -> a.lineNum));
         printInputDataToXlsx(model.sheet.lines, writer.sheet(INPUT_DATA_SHEET));
         printInputDataToXlsx(averageLines, writer.sheet(AVG_DATA_SHEET));
         writer.save();
@@ -28,7 +25,7 @@ public class AverageDataCalculator {
         var linesByDate = groupByDates(model);
         System.out.println("Found " + linesByDate.size() + " days data");
         var averageLines = calculateAverageXls(linesByDate);
-        averageLines.sort((a, b) -> a.date.compareTo(b.date));
+        averageLines.sort(Comparator.comparingInt(a -> a.lineNum));
         printInputDataToXls(model.sheet.lines, writer.sheet(INPUT_DATA_SHEET));
         printInputDataToXls(averageLines, writer.sheet(AVG_DATA_SHEET));
         writer.save();
