@@ -1,4 +1,7 @@
+package com.vakons.well_calc;
 import com.bergen.exel_orm.orm.ExelORM;
+import com.vakons.well_calc.excel.ExcelModel2023;
+import com.vakons.well_calc.excel.ExcelModelXls2024;
 
 import java.io.IOException;
 
@@ -14,7 +17,7 @@ public class Main {
         var filename = "data/" + input;
         var orm = new ExelORM();
         System.out.println("Begin parse file '" + filename + "'...");
-        var excel = orm.read(ExcelModel.class, filename);
+        var excel = orm.read(ExcelModel2023.class, filename);
         excel.prepareRaw();
         System.out.println("Success: Parsed " + excel.sheet.lines.size() + " lines");
         System.out.println("Calculate average in day...");
@@ -27,7 +30,7 @@ public class Main {
         var filename = "data/" + input;
         var orm = new ExelORM();
         System.out.println("Begin parse file '" + filename + "'...");
-        var excel = orm.read(ExcelModelXls.class, filename);
+        var excel = orm.read(ExcelModelXls2024.class, filename);
         excel.prepareRaw();
         System.out.println("Success: Parsed " + excel.sheet.lines.size() + " lines");
         System.out.println("Calculate average in day...");

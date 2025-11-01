@@ -1,5 +1,9 @@
+package com.vakons.well_calc;
+
 import com.bergen.exel_orm.exel.ExcelSheetWriter;
 import com.bergen.exel_orm.exel.ExcelWriter;
+import com.vakons.well_calc.excel.ExcelModel2023;
+import com.vakons.well_calc.excel.ExcelModelXls2024;
 
 import java.io.IOException;
 import java.util.*;
@@ -9,7 +13,7 @@ public class AverageDataCalculator {
     private static final String INPUT_DATA_SHEET = "Входные данные";
     private ExcelWriter writer;
 
-    public void calculateAverageDayData(ExcelModel model, String outputFilename) throws IOException {
+    public void calculateAverageDayData(ExcelModel2023 model, String outputFilename) throws IOException {
         writer = new ExcelWriter(outputFilename);
         var linesByDate = groupByDates(model);
         System.out.println("Found " + linesByDate.size() + " days data");
@@ -20,7 +24,7 @@ public class AverageDataCalculator {
         writer.save();
     }
 
-    public void calculateAverageDayData(ExcelModelXls model, String outputFilename) throws IOException {
+    public void calculateAverageDayData(ExcelModelXls2024 model, String outputFilename) throws IOException {
         writer = new ExcelWriter(outputFilename);
         var linesByDate = groupByDates(model);
         System.out.println("Found " + linesByDate.size() + " days data");
@@ -31,8 +35,8 @@ public class AverageDataCalculator {
         writer.save();
     }
 
-    private Map<String, List<ExcelModel.DataLine>> groupByDates(ExcelModel model) {
-        Map<String, List<ExcelModel.DataLine>> linesByDate = new HashMap<>();
+    private Map<String, List<ExcelModel2023.DataLine>> groupByDates(ExcelModel2023 model) {
+        Map<String, List<ExcelModel2023.DataLine>> linesByDate = new HashMap<>();
         for(var line : model.sheet.lines) {
             if(!linesByDate.containsKey(line.date)) {
                 linesByDate.put(line.date, new LinkedList<>());
@@ -42,8 +46,8 @@ public class AverageDataCalculator {
         return linesByDate;
     }
 
-    private Map<String, List<ExcelModelXls.DataLine>> groupByDates(ExcelModelXls model) {
-        Map<String, List<ExcelModelXls.DataLine>> linesByDate = new HashMap<>();
+    private Map<String, List<ExcelModelXls2024.DataLine>> groupByDates(ExcelModelXls2024 model) {
+        Map<String, List<ExcelModelXls2024.DataLine>> linesByDate = new HashMap<>();
         for(var line : model.sheet.lines) {
             if(!linesByDate.containsKey(line.date)) {
                 linesByDate.put(line.date, new LinkedList<>());
@@ -53,8 +57,8 @@ public class AverageDataCalculator {
         return linesByDate;
     }
 
-    private List<ExcelModel.DataLine> calculateAverage(Map<String, List<ExcelModel.DataLine>> linesByDate) {
-        List<ExcelModel.DataLine> result = new LinkedList<>();
+    private List<ExcelModel2023.DataLine> calculateAverage(Map<String, List<ExcelModel2023.DataLine>> linesByDate) {
+        List<ExcelModel2023.DataLine> result = new LinkedList<>();
         for(var date : linesByDate.keySet()) {
             var linesInDay = linesByDate.get(date);
             var dateLine = linesInDay.get(0);
@@ -68,8 +72,8 @@ public class AverageDataCalculator {
         return result;
     }
 
-    private List<ExcelModelXls.DataLine> calculateAverageXls(Map<String, List<ExcelModelXls.DataLine>> linesByDate) {
-        List<ExcelModelXls.DataLine> result = new LinkedList<>();
+    private List<ExcelModelXls2024.DataLine> calculateAverageXls(Map<String, List<ExcelModelXls2024.DataLine>> linesByDate) {
+        List<ExcelModelXls2024.DataLine> result = new LinkedList<>();
         for(var date : linesByDate.keySet()) {
             var linesInDay = linesByDate.get(date);
             var dateLine = linesInDay.get(0);
@@ -83,7 +87,7 @@ public class AverageDataCalculator {
         return result;
     }
 
-    private void printInputDataToXlsx(List<ExcelModel.DataLine> lines, ExcelSheetWriter sheet) {
+    private void printInputDataToXlsx(List<ExcelModel2023.DataLine> lines, ExcelSheetWriter sheet) {
         sheet.set("A1", "№");
         sheet.set("B1", "Дата замера");
         sheet.set("C1", "Время замера");
@@ -114,7 +118,7 @@ public class AverageDataCalculator {
         }
     }
 
-    private void printInputDataToXls(List<ExcelModelXls.DataLine> lines, ExcelSheetWriter sheet) {
+    private void printInputDataToXls(List<ExcelModelXls2024.DataLine> lines, ExcelSheetWriter sheet) {
         sheet.set("A1", "Дата замера");
         sheet.set("B1", "Время замера");
         sheet.set("C1", "№ Объекта");

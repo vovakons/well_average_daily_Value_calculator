@@ -1,7 +1,6 @@
-import com.bergen.exel_orm.annotations.ExelORMCell;
-import com.bergen.exel_orm.annotations.ExelORMFile;
-import com.bergen.exel_orm.annotations.ExelORMInfinitiveList;
-import com.bergen.exel_orm.annotations.ExelORMSheetsMap;
+package com.vakons.well_calc.excel;
+
+import com.bergen.exel_orm.annotations.*;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -9,7 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @ExelORMFile
-public class ExcelModelXls {
+public class ExcelModel2023 {
     @ExelORMSheetsMap public Map<String, DataSheet> sheets;
     public DataSheet sheet;
 
@@ -20,14 +19,11 @@ public class ExcelModelXls {
                     continue;
                 }
                 sheet = sheets.get(shName);
-                var errors = 0;
                 var num = 1;
                 for(var line : sheet.lines) {
                     line.lineNum = num++;
                     line.parseRaw();
-                    errors += line.parseErrors;
                 }
-                System.out.println("Parse sheet errors=" + errors);
                 return;
             }
         }
@@ -40,11 +36,11 @@ public class ExcelModelXls {
 
     public static class DataLine {
         public int lineNum;
-        @ExelORMCell(pos = "A1") public String date;
-        @ExelORMCell(pos = "B1") public String time;
-        @ExelORMCell(pos = "C1") public String target;
-        @ExelORMCell(pos = "D1") public String endKosaNumber; //wtf?
-        @ExelORMCell(pos = "E1") public String depthMinus1mRaw;
+        @ExelORMCell(pos = "A1") public String number;
+        @ExelORMCell(pos = "B1") public String date;
+        @ExelORMCell(pos = "C1") public String time;
+        @ExelORMCell(pos = "D1") public String target;
+        @ExelORMCell(pos = "E1") public String endKosaNumber; //wtf?
         @ExelORMCell(pos = "F1") public String depth0mRaw;
         @ExelORMCell(pos = "G1") public String depth1mRaw;
         @ExelORMCell(pos = "H1") public String depth2mRaw;
@@ -52,8 +48,6 @@ public class ExcelModelXls {
         @ExelORMCell(pos = "J1") public String depth5mRaw;
         @ExelORMCell(pos = "K1") public String depth7mRaw;
         @ExelORMCell(pos = "L1") public String depth10mRaw;
-        @ExelORMCell(pos = "M1") public String zeroIsotermDepth;
-        @ExelORMCell(pos = "N1") public String integralTemperatureRaw;
         public float depth0m;
         public float depth1m;
         public float depth2m;
@@ -61,28 +55,15 @@ public class ExcelModelXls {
         public float depth5m;
         public float depth7m;
         public float depth10m;
-        public float integralTemperature;
-
-        public int parseErrors = 0;
 
         public void parseRaw() {
-            depth0m = parseFloat(depth0mRaw);
-            depth1m = parseFloat(depth1mRaw);
-            depth2m = parseFloat(depth2mRaw);
-            depth3m = parseFloat(depth3mRaw);
-            depth5m = parseFloat(depth5mRaw);
-            depth7m = parseFloat(depth7mRaw);
-            depth10m = parseFloat(depth10mRaw);
-            integralTemperature = parseFloat(integralTemperatureRaw);
-        }
-
-        private float parseFloat(String text) {
-            try {
-                return Float.parseFloat(text);
-            } catch (NumberFormatException err) {
-                parseErrors++;
-                return 0;
-            }
+            depth0m = Float.parseFloat(depth0mRaw);
+            depth1m = Float.parseFloat(depth1mRaw);
+            depth2m = Float.parseFloat(depth2mRaw);
+            depth3m = Float.parseFloat(depth3mRaw);
+            depth5m = Float.parseFloat(depth5mRaw);
+            depth7m = Float.parseFloat(depth7mRaw);
+            depth10m = Float.parseFloat(depth10mRaw);
         }
 
         public void add(DataLine other) {
@@ -93,7 +74,6 @@ public class ExcelModelXls {
             depth5m += other.depth5m;
             depth7m += other.depth7m;
             depth10m += other.depth10m;
-            integralTemperature += other.integralTemperature;
         }
 
         public void divide(float value) {
@@ -104,7 +84,6 @@ public class ExcelModelXls {
             depth5m /= value;
             depth7m /= value;
             depth10m /= value;
-            integralTemperature /= value;
         }
     }
 }
