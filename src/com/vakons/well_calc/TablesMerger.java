@@ -10,6 +10,7 @@ import com.vakons.well_calc.model.WellMeasurement;
 import com.vakons.well_calc.model.WellModel;
 import com.vakons.well_calc.model.WellsModel;
 import com.vakons.well_calc.utils.DateUtils;
+import com.vakons.well_calc.utils.RandomUtils;
 
 import java.util.*;
 
@@ -93,14 +94,55 @@ public class TablesMerger {
         model.measurements.clear();
         for(var date : dayMeasurements.keySet()) {
             var measurements = dayMeasurements.get(date);
-            var measurement = measurements.get(0);
-            for(var i = 0; i < measurements.size(); i++) {
-                measurement.add(measurements.get(i));
-            }
-            measurement.divide(measurements.size());
+            var measurement = calculateDayMeasurementData(measurements);
             model.measurements.add(measurement);
         }
         model.measurements.sort(Comparator.comparingLong(a -> a.date));
+    }
+
+    private WellMeasurement calculateDayMeasurementData(List<WellMeasurement> measurements) {
+        var result = new WellMeasurement();
+        int measurementsCount = measurements.size();
+        List<Float> arr = new LinkedList<>();
+        // copy static data from first measurement in day
+        var first = measurements.get(0);
+        result.date = first.date;
+        result.year = first.year;
+        result.daytime = first.daytime;
+        result.zeroIsotermLevel = first.zeroIsotermLevel;
+        result.temperature = first.temperature;
+        result.snowLevelHeight = first.snowLevelHeight;
+        //calculate average integral temperature
+        for(var measurement : measurements) {
+            result.integralTemperature += measurement.integralTemperature;
+        }
+        result.integralTemperature = result.integralTemperature / measurementsCount;
+        // data by depths
+        for(var depth : DEPTHS) {
+            var depthData = result.getDepth(depth);
+            //calculate p value
+            depthData.pValue = RandomUtils.randomFloat(); //TODO implement
+            //calculate average
+            var total = 0f;
+            for(var measurement : measurements) {
+                total += measurement.getDepthValue(depth);
+            }
+            depthData.averge = total / measurementsCount;
+            //calculate median
+            arr.clear();
+            for(var measurement : measurements) {
+                arr.add(measurement.getDepthValue(depth));
+            }
+            arr.sort(Float::compare);
+            if(arr.size() % 2 == 0) {
+                var a = arr.get(arr.size()/2-1);
+                var b = arr.get(arr.size()/2);
+                depthData.median = (a + b) / 2f;
+            } else {
+                depthData.median = arr.get(arr.size()/2);
+            }
+        }
+        return result;
     }
 
     public void parseTemperatures(String filename) {
@@ -167,19 +209,30 @@ public class TablesMerger {
             sheet.set("A" + line, DateUtils.formatDDMMYYYY(measurement.date));
             sheet.set("B" + line, model.objectName);
             sheet.set("C" + line, model.braidId.replace(".0", ""));
-            sheet.set("D" + line, floatToString(measurement.getDepthValue(0)));
-            sheet.set("E" + line, floatToString(measurement.getDepthValue(1)));
-            sheet.set("F" + line, floatToString(measurement.getDepthValue(2)));
-            sheet.set("G" + line, floatToString(measurement.getDepthValue(3)));
-            sheet.set("H" + line, floatToString(measurement.getDepthValue(5)));
-            sheet.set("I" + line, floatToString(measurement.getDepthValue(7)));
-            sheet.set("J" + line, floatToString(measurement.getDepthValue(10)));
+            writeDepthDataInCell(sheet, "D" + line, measurement, 0);
+            writeDepthDataInCell(sheet, "E" + line, measurement, 1);
+            writeDepthDataInCell(sheet, "F" + line, measurement, 2);
+            writeDepthDataInCell(sheet, "G" + line, measurement, 3);
+            writeDepthDataInCell(sheet, "H" + line, measurement, 5);
+            writeDepthDataInCell(sheet, "I" + line, measurement, 7);
+            writeDepthDataInCell(sheet, "J" + line, measurement, 10);
             sheet.set("K" + line, floatToString(measurement.zeroIsotermLevel));
             sheet.set("L" + line, floatToString(measurement.integralTemperature));
             sheet.set("M" + line, floatToString(measurement.temperature));
             sheet.set("N" + line, floatToString(measurement.snowLevelHeight));
             line++;
         }
+    }
+
+    private static void writeDepthDataInCell(ExcelSheetWriter sheet, String cellPos, WellMeasurement measurement, int depth) {
+        var depthData = measurement.getDepth(depth);
+        var dataText = "p=" + depthData.pValue + " ";
+        if(depthData.pValue > 0.05) { //TODO extract to constant
+            dataText += " avg=" + depthData.averge;
+        } else {
+            dataText += " median=" + depthData.median;
+        }
+        sheet.set(cellPos, dataText);
     }
 
     public static void main(String[] args) {

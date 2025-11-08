@@ -25,6 +25,21 @@ public class WellMeasurement {
     public static class WellDepthData {
         public int depth;
         public float value;
+        public float pValue;
+        public float averge;
+        public float median;
+    }
+
+    public WellDepthData getDepth(int depth) {
+        for(var depthData : depths) {
+            if(depthData.depth == depth) {
+                return depthData;
+            }
+        }
+        var depthData = new WellDepthData();
+        depthData.depth = depth;
+        depths.add(depthData);
+        return depthData;
     }
 
     public void setDepthData(int depth, float value) {
@@ -48,29 +63,5 @@ public class WellMeasurement {
             }
         }
         return 0;
-    }
-
-    public void sortDepths() {
-        depths.sort(Comparator.comparingInt(a -> a.depth));
-    }
-
-    public void add(WellMeasurement other) {
-        for(var depth : depths) {
-            setDepthData(depth.depth, depth.value + other.getDepthValue(depth.depth));
-        }
-        //add not exists in this depth data
-        for(var depth : other.depths) {
-            if (getDepthValue(depth.depth) == 0) {
-                setDepthData(depth.depth, depth.value);
-            }
-        }
-        integralTemperature += other.integralTemperature;
-    }
-
-    public void divide(float divider) { //need for calculate average value
-        for(var depth : depths) {
-            depth.value = depth.value / divider;
-        }
-        integralTemperature = integralTemperature / divider;
     }
 }
