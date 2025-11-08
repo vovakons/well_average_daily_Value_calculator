@@ -11,12 +11,15 @@ import com.vakons.well_calc.model.WellModel;
 import com.vakons.well_calc.model.WellsModel;
 import com.vakons.well_calc.utils.DateUtils;
 import com.vakons.well_calc.utils.RandomUtils;
+import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
 
 import java.util.*;
 
 public class TablesMerger {
     public static final int[] YEARS = { 2021, 2022, 2023, 2024, 2025 };
     public static final int[] DEPTHS = { 0, 1, 2, 3, 5, 7, 10 };
+    public static final float ALPHA = 0.05f;
     private WellsModel wells = new WellsModel();
 
     public void parseWellDataFormat2024(String id, String filename) {
@@ -101,8 +104,11 @@ public class TablesMerger {
     }
 
     private WellMeasurement calculateDayMeasurementData(List<WellMeasurement> measurements) {
-        var result = new WellMeasurement();
         int measurementsCount = measurements.size();
+        if(measurementsCount == 1) {
+            return measurements.get(0);
+        }
+        var result = new WellMeasurement();
         List<Float> arr = new LinkedList<>();
         // copy static data from first measurement in day
         var first = measurements.get(0);
@@ -122,12 +128,21 @@ public class TablesMerger {
             var depthData = result.getDepth(depth);
             //calculate p value
             depthData.pValue = RandomUtils.randomFloat(); //TODO implement
-            //calculate average
-            var total = 0f;
-            for(var measurement : measurements) {
-                total += measurement.getDepthValue(depth);
+            double[] sampleData  = new double[measurementsCount];
+            for(var i = 0; i < measurementsCount; i++) {
+                sampleData[i] = measurements.get(i).getDepthValue(depth);
             }
-            depthData.averge = total / measurementsCount;
+            var average = mean(sampleData);
+            var sd = standardDeviation(sampleData, average);
+            if(sd == 0) {
+                depthData.pValue = 0f;
+            } else {
+                KolmogorovSmirnovTest ksTest = new KolmogorovSmirnovTest();
+                var normalDist = new NormalDistribution(average, sd);
+                depthData.pValue = (float) ksTest.kolmogorovSmirnovTest(normalDist, sampleData);
+            }
+            //calculate average
+            depthData.averge = (float) average;
             //calculate median
             arr.clear();
             for(var measurement : measurements) {
@@ -143,6 +158,24 @@ public class TablesMerger {
             }
         }
         return result;
+    }
+
+    public static double mean(double[] data) {
+        double sum = 0.0;
+        for (double value : data) {
+            sum += value;
+        }
+        return sum / data.length;
+    }
+
+    public static double standardDeviation(double[] data, double average) {
+        if (data.length <= 1) throw new IllegalArgumentException("Требуется минимум два элемента");
+        double varianceSum = 0.0;
+        for (double value : data) {
+            varianceSum += Math.pow(value - average, 2);
+        }
+        double variance = varianceSum / (data.length - 1); // Выборочная дисперсия
+        return Math.sqrt(variance); // Стандартное отклонение
     }
 
     public void parseTemperatures(String filename) {
@@ -163,21 +196,22 @@ public class TablesMerger {
         System.out.println("===== Print output excels =====");
         System.out.println("Output dir: " + outputDir);
         for(var model : wells.getModels()) {
-            printExcelForModel(model, outputDir);
+            printExcelForModel(model, outputDir, true);
+            printExcelForModel(model, outputDir, false);
         }
     }
 
-    private void printExcelForModel(WellModel model, String outputDir) {
+    private void printExcelForModel(WellModel model, String outputDir, boolean debug) {
         System.out.print("Model " + model.objectId + "...");
         try {
-            var writer = new ExcelWriter(outputDir + model.objectId + ".xlsx");
+            var writer = new ExcelWriter(outputDir + model.objectId + (debug ? "-debug" : "") + ".xlsx");
             for(int year : YEARS) {
                 var yearMeasurements = model.collectByYear(year);
                 if(yearMeasurements.isEmpty()) {
                     continue;
                 }
                 var sheet = writer.sheet(Integer.toString(year));
-                writeYearMeasurementsToSheet(model, yearMeasurements, sheet);
+                writeYearMeasurementsToSheet(model, yearMeasurements, sheet, debug);
             }
             writer.save();
             System.out.println("SUCCESS");
@@ -187,7 +221,7 @@ public class TablesMerger {
         }
     }
 
-    private void writeYearMeasurementsToSheet(WellModel model, List<WellMeasurement> measurements, ExcelSheetWriter sheet) {
+    private void writeYearMeasurementsToSheet(WellModel model, List<WellMeasurement> measurements, ExcelSheetWriter sheet, boolean debug) {
         //print header
         sheet.set("A1", "Дата замера");
         sheet.set("B1", "№ Объекта");
@@ -209,13 +243,24 @@ public class TablesMerger {
             sheet.set("A" + line, DateUtils.formatDDMMYYYY(measurement.date));
             sheet.set("B" + line, model.objectName);
             sheet.set("C" + line, model.braidId.replace(".0", ""));
-            writeDepthDataInCell(sheet, "D" + line, measurement, 0);
-            writeDepthDataInCell(sheet, "E" + line, measurement, 1);
-            writeDepthDataInCell(sheet, "F" + line, measurement, 2);
-            writeDepthDataInCell(sheet, "G" + line, measurement, 3);
-            writeDepthDataInCell(sheet, "H" + line, measurement, 5);
-            writeDepthDataInCell(sheet, "I" + line, measurement, 7);
-            writeDepthDataInCell(sheet, "J" + line, measurement, 10);
+            if(debug) {
+                writeDepthDataInCellDebug(sheet, "D" + line, measurement, 0);
+                writeDepthDataInCellDebug(sheet, "E" + line, measurement, 1);
+                writeDepthDataInCellDebug(sheet, "F" + line, measurement, 2);
+                writeDepthDataInCellDebug(sheet, "G" + line, measurement, 3);
+                writeDepthDataInCellDebug(sheet, "H" + line, measurement, 5);
+                writeDepthDataInCellDebug(sheet, "I" + line, measurement, 7);
+                writeDepthDataInCellDebug(sheet, "J" + line, measurement, 10);
+
+            } else {
+                writeDepthDataInCell(sheet, "D" + line, measurement, 0);
+                writeDepthDataInCell(sheet, "E" + line, measurement, 1);
+                writeDepthDataInCell(sheet, "F" + line, measurement, 2);
+                writeDepthDataInCell(sheet, "G" + line, measurement, 3);
+                writeDepthDataInCell(sheet, "H" + line, measurement, 5);
+                writeDepthDataInCell(sheet, "I" + line, measurement, 7);
+                writeDepthDataInCell(sheet, "J" + line, measurement, 10);
+            }
             sheet.set("K" + line, floatToString(measurement.zeroIsotermLevel));
             sheet.set("L" + line, floatToString(measurement.integralTemperature));
             sheet.set("M" + line, floatToString(measurement.temperature));
@@ -226,13 +271,29 @@ public class TablesMerger {
 
     private static void writeDepthDataInCell(ExcelSheetWriter sheet, String cellPos, WellMeasurement measurement, int depth) {
         var depthData = measurement.getDepth(depth);
-        var dataText = "p=" + depthData.pValue + " ";
-        if(depthData.pValue > 0.05) { //TODO extract to constant
-            dataText += " avg=" + depthData.averge;
+        float dataText = 0f;
+        if(depthData.pValue > ALPHA) {
+            dataText += depthData.averge;
         } else {
-            dataText += " median=" + depthData.median;
+            dataText += depthData.median;
+        }
+        sheet.set(cellPos, floatToString(dataText));
+    }
+
+    private static void writeDepthDataInCellDebug(ExcelSheetWriter sheet, String cellPos, WellMeasurement measurement, int depth) {
+        var depthData = measurement.getDepth(depth);
+        var dataText = "p=" + round(depthData.pValue);
+        if(depthData.pValue >= ALPHA) {
+            dataText +=  " AVG=" + round(depthData.averge) + " median=" + round(depthData.median);
+        } else {
+            dataText += " avg=" + round(depthData.averge) + " MEDIAN=" + round(depthData.median);
         }
         sheet.set(cellPos, dataText);
+    }
+
+    private static String round(float value) {
+        float val = Math.round(value * 100) / 100f;
+        return Float.toString(val);
     }
 
     public static void main(String[] args) {
